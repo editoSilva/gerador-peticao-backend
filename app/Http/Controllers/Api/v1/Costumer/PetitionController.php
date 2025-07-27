@@ -52,6 +52,8 @@ class PetitionController extends Controller
             );
         })->implode("\n\n");
 
+        // return $jurisprudences;
+
         // Montar prompt com os dados do cliente para a geração da petição
         $fullPrompt = <<<EOT
             Crie uma petição simples com base no Código de Defesa do Consumidor (CDC), para ser usada diretamente no Juizado Especial Cível, sem necessidade de advogado.
@@ -97,10 +99,8 @@ class PetitionController extends Controller
             13. A petição deve conter a data e o local de onde está sendo feita, com o nome do cliente como assinatura.
             14. A petição deve ser escrita de forma que qualquer pessoa possa entender, sem necessidade de conhecimento jurídico prévio.
             15. A petição deve ser escrita de forma que possa ser enviada por e-mail, sem necessidade de formatação adicional.
-            16. Coloque uma menssão que as provas estão em anexo em imagens..
-            17. remova o nome  no fim da petição e data também 
-
-
+            16. remova o nome  no fim da petição e data também.
+            17. Coloque uma menssão que as provas estão em anexo em imagens.
             A linguagem deve ser clara, objetiva e acessível para qualquer pessoa.
             quero que a petição seja real sem caracteres especiais, separe por paragráfo corretamente e preciso que tenha a data e  o local digitado que ja venha impresso
             EOT;
@@ -108,7 +108,10 @@ class PetitionController extends Controller
 
         $generatedText = app(GptService::class)->generatePetition($fullPrompt);
 
+        $rand = rand(18575557, 99999999);
+
         $petition = Petition::create([
+            'ref_id' => $rand+time()+time()+rand(15475,99999),
             'type' => null,
             'content' => $generatedText,
             'input_data' => $data,
@@ -116,7 +119,7 @@ class PetitionController extends Controller
 
         // Gerar PDF
         $pdf = Pdf::loadView('emails.petition_generated', ['content' => $generatedText, 'name' => $data['nome_completo']]);
-        $pdfPath = 'petitions/petition_' . $petition->id . '.pdf';
+        $pdfPath = 'petitions/peticao_n_' . $petition->ref_id . '.pdf';
         Storage::put($pdfPath, $pdf->output());
 
         // Gerenciar anexos enviados
@@ -128,9 +131,9 @@ class PetitionController extends Controller
             }
         }
 
-        Mail::to($data['email'])->send(
-            new PetitionGeneratedMail($data['nome_completo'], $pdfPath, $attachmentPaths)
-        );
+        // Mail::to($data['email'])->send(
+        //     new PetitionGeneratedMail($data['nome_completo'], $pdfPath, $attachmentPaths)
+        // );
 
         return response()->json($petition);
 

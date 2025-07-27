@@ -11,10 +11,8 @@ class JurisprudenceController extends Controller
     // Listar jurisprudências com busca e limite de 20 registros
     public function index(Request $request)
     {
-
-
-
         $search = $request->query('search');
+
         $query = Jurisprudence::query();
 
         if ($search) {
@@ -24,7 +22,7 @@ class JurisprudenceController extends Controller
                 ->orWhere('keywords', 'like', "%{$search}%");
         }
 
-        return response()->json($query->orderByDesc('judgment_date')->paginate(15));
+        return response()->json($query->orderByDesc('judgment_date')->paginate($request->per_page ?? 30));
     }
 
     // Criar uma nova jurisprudência

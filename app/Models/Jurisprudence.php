@@ -8,6 +8,7 @@ class Jurisprudence extends Model
 {
 
     protected $fillable = [
+        'type',             // Tipo de jurisprudência (ex: Acórdão, Decisão, etc.)
         'title',             // Título da jurisprudência
         'summary',           // Ementa ou resumo
         'full_text',         // Texto completo

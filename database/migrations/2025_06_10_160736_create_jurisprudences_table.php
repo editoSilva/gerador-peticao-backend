@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('jurisprudences', function (Blueprint $table) {
             $table->id();
             $table->string('title');
+            $table->string('type');
             $table->text('summary')->nullable();
             $table->longText('full_text');
             $table->string('court')->nullable();

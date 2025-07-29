@@ -29,6 +29,7 @@ class JurisprudenceController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'type' => 'required|string', // Tipo de jurisprudência (ex: Acórdão, Decisão, etc.)
             'title' => 'required|string',
             'summary' => 'nullable|string',
             'full_text' => 'required|string',

@@ -14,18 +14,47 @@
         p {
             margin-bottom: 12px;
         }
+
+        .no-break {
+            page-break-inside: avoid;
+        }
+
+        .signature-block {
+            margin-top: 80px;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+
+        .anexo {
+            page-break-before: always;
+            text-align: center;
+        }
+
+        h3 {
+            page-break-after: avoid;
+        }
+
     </style>
 </head>
 <body>
 {!! nl2br(e($content)) !!}
-{{-- <p style="text-align: center">
-    Vitória da Conquista - BA, {{ \Carbon\Carbon::now() }}
-</p> --}}
 
-</br>
-</br>
-</br>
-<p style="text-align: center">___________________________________________</p>
-<p style="text-align: center">{{ $name }}</p>
+<div class="signature-block">
+    <p>Vitória da Conquista - BA, {{ \Carbon\Carbon::now()->format('d/m/Y') }}</p>
+    </br>
+    </br>
+    <p>___________________________________________</p>
+    <p>{{ $name }}</p>
+</div>
+
+@if (!empty($attachments))
+
+    @foreach ($attachments as $img)
+        <div class="anexo">
+            <img src="{{ $img }}" style="max-width: 100%; max-height: 100%;" />
+        </div>
+    @endforeach
+@endif
+
 </body>
 </html>

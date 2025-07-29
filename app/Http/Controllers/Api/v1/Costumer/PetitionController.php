@@ -2,22 +2,33 @@
 
 namespace App\Http\Controllers\Api\v1\Costumer;
 
-use App\Http\Controllers\Controller;
-use App\Mail\PetitionGeneratedMail;
-use App\Models\Jurisprudence;
 use App\Models\Petition;
-use App\Services\GeminiService;
 use App\Services\GptService;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use App\Models\Jurisprudence;
+use App\Services\GeminiService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\EvolutionService;
+use App\Mail\PetitionGeneratedMail;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 
 class PetitionController extends Controller
 {
+    private $serviceEvolution;
+
+    public function __construct(EvolutionService $serviceEvolution)
+    {
+        $this->serviceEvolution = $serviceEvolution;
+    }
+  
     public function store(Request $request)
     {
+
+        // return $this->serviceEvolution->sendMenssageText($request->phone, 'Segue o link da sua petição: https://systechtecnologia.s3.amazonaws.com/petitions/peticao_n_3604590023.pdf');
+
         $data = $request->validate([
             'prompt' => 'required|string',
             'nome_completo' => 'required|string',
@@ -85,7 +96,7 @@ class PetitionController extends Controller
 
             Requisitos:
             1. pegue o endereço do clientes cidade estado para definir a comarca na petição, deixe esse campo em maiusculo e centralizado. Ex: 'EXCELENTÍSSIMO SENHOR JUIZ DE DIREITO DA [número ou nome] VARA DO SISTEMA DOS JUIZADOS CÍVEIS DO FORO DA COMARCA DE [nome da comarca] DO [Estado da comarca]'
-            2. utilize a informação do requerido e coloque os dados do mesmo na ação,  busque os dados de cnpj e razação social na internet
+            2. utilize a informação do requerido e coloque os dados do mesmo na ação,  busque os dados de cnpj e razação social na internet, a moeda é real R$
             // 3. Basei a ação no artigo 186 do cdc com um exceente fundamento jurídico a peça. 
             4. Estrutura com: cabeçalho, qualificação do consumidor, exposição dos fatos, fundamentos jurídicos com base no CDC, e pedidos. CALCULE O VALOR DA CAUSA PEÇA UM VALOR ALTO QUE CHEGUE NO TETO DE 40 SALÁRIOS MINIMIOS VIGENTES, REFERENTE AO PEDIDO QUE O CLIENTE SOLICITOU DA DESCRIÇÃO DOS FATOS, FAÇA ISSO DE FORMA BASEADA NO CDC, SE BASEI NO ART 42 DO CDC PARA FAZER UM CALCULO QUE DER UM VALOR ALTO PARA O REQUERENTE
             5. Citar os artigos do CDC aplicáveis (como má prestação de serviço, serviço essencial, direito à informação, etc), Basei a ação no artigo 186.
@@ -108,32 +119,64 @@ class PetitionController extends Controller
 
         $generatedText = app(GptService::class)->generatePetition($fullPrompt);
 
+        if($request->type == 'cdc') {
+            $generateLocation = app(GptService::class)->generatePetitionLocation(
+                "Qual o local e comarca da petição com base no documento gerado: {$generatedText}, mostre o local onde devo levar esse documento ou o procedimento que preciso fazer?"
+            );
+
+        }
+        if($request->type == 'trans') {
+
+         $orgao = strtolower($data['orgao_autuador'] ?? '');
+
+
+
+        $promptText = "Com base no órgão autuador '{$data['orgao_autuador']}' e no estado '{$data['estado']}', onde o cidadão deve entrar com recurso da multa de trânsito,  mostre o local onde devo levar esse documento ou o procedimento que preciso fazer??";
+        $generateLocation = app(GeminiService::class)->generatePetition($promptText);
+       
+    }
+
         $rand = rand(18575557, 99999999);
 
         $petition = Petition::create([
             'ref_id' => $rand+time()+time()+rand(15475,99999),
-            'type' => null,
+            'type' => $request->type,
             'content' => $generatedText,
             'input_data' => $data,
+            'local_delivery' => $generateLocation,
         ]);
 
-        // Gerar PDF
-        $pdf = Pdf::loadView('emails.petition_generated', ['content' => $generatedText, 'name' => $data['nome_completo']]);
-        $pdfPath = 'petitions/peticao_n_' . $petition->ref_id . '.pdf';
-        Storage::put($pdfPath, $pdf->output());
-
-        // Gerenciar anexos enviados
-        $attachmentPaths = [];
+        // Preparar anexos (imagens em base64)
+        $imagesBase64 = [];
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
-                $storedPath = $file->store('petitions/attachments');
-                $attachmentPaths[] = Storage::path($storedPath);
+                $imagesBase64[] = 'data:' . $file->getMimeType() . ';base64,' . base64_encode(file_get_contents($file));
             }
         }
 
-        // Mail::to($data['email'])->send(
-        //     new PetitionGeneratedMail($data['nome_completo'], $pdfPath, $attachmentPaths)
-        // );
+
+        // Gerar PDF
+        $pdf = Pdf::loadView('emails.petition_generated', [
+            'content' => $generatedText, 
+            'name' => $data['nome_completo'],
+            'attachments' => $imagesBase64,
+        ]);
+
+        $pdfPath = 'petitions/peticao_n_' . $petition->ref_id . '.pdf';
+        Storage::disk('s3')->put($pdfPath, $pdf->output(), 'public');
+
+        // Gerar a URL pública
+        $pdfUrl = Storage::disk('s3')->url($pdfPath);
+
+        // Atualizar a petição com a URL
+        $petition->update([
+            'pdf_url' => $pdfUrl,
+        ]);
+   
+       $this->serviceEvolution->sendMenssageText($request->phone, $petition->local_delivery);
+
+       $this->serviceEvolution->sendMenssageText($request->phone, 'Segue o link da sua petição: ' . $pdfUrl);
+
 
         return response()->json($petition);
 

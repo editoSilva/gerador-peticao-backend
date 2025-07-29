@@ -13,9 +13,13 @@ return new class extends Migration
     {
         Schema::create('petitions', function (Blueprint $table) {
             $table->id();
+            $table->string('ref_id')->nullable()->index();        
             $table->string('type')->nullable();
             $table->longText('content');
             $table->json('input_data');
+            $table->string('pdf_url')->nullable();
+            $table->longText('local_delivery')->nullable();
+            $table->enum('status', ['paid', 'pending', 'canceled'])->default('pending');
             $table->timestamps();
         });
     }

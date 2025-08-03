@@ -13,6 +13,10 @@ Route::prefix('costumer')->group(function () {
     Route::apiResource('petitions', PetitionController::class);
 });
 
+Route::prefix('webhooks')->group(
+    base_path('routes/Webhooks/MP/api.php')
+);
+
 Route::prefix('admin')->group(function () {
     Route::apiResource('jurisprudences', JurisprudenceController::class);
 });

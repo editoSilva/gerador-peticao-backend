@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('petition_requests', function (Blueprint $table) {
             $table->id();
-            $table->text('prompt')->nullable();
+            $table->longText('prompt')->nullable();
+            $table->string('type');
             $table->string('nome_completo');
+            $table->string('phone');
             $table->string('cpf', 20);
             $table->string('rg', 20)->nullable();
             $table->string('orgao_expedidor', 50)->nullable();
@@ -28,6 +30,10 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('razao_social')->nullable();
             $table->string('cnpj', 20)->nullable();
+            $table->longText('jurisprudences')->nullable();
+            $table->string('ref_id')->index();
+            $table->decimal('price', 10, 2);
+            $table->string('qr_code')->nullable();
             $table->enum('status', ['pending', 'paid', 'refused', 'refunded', 'chargeback'])->default('pending');
             $table->timestamps();
         });

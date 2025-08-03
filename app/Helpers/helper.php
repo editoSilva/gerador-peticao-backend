@@ -78,3 +78,18 @@ if(!function_exists('limparMarkdown')) {
         return trim($texto);
     }
 }
+
+if(!function_exists('saudacaoPorHorario')) {
+    function saudacaoPorHorario(): string {
+        $hora = (int) date('H');
+    
+        if ($hora >= 5 && $hora < 12) {
+            return 'Bom dia';
+        } elseif ($hora >= 12 && $hora < 18) {
+            return 'Boa tarde';
+        } else {
+            return 'Boa noite';
+        }
+    }
+    
+}

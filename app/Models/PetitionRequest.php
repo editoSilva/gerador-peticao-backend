@@ -11,6 +11,7 @@ class PetitionRequest extends Model
 
     protected $fillable = [
         'prompt',
+        'phone',
         'nome_completo',
         'cpf',
         'rg',
@@ -25,9 +26,15 @@ class PetitionRequest extends Model
         'email',
         'razao_social',
         'cnpj',
-        'status'
+        'status',
+        'jurisprudences',
+        'ref_id',
+        'price',
+        'qr_code',
+        'type'
     ];
 
+   
     public function attachments()
     {
         return $this->hasMany(PetitionAttachment::class);

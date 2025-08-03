@@ -11,7 +11,7 @@ class JurisprudenceController extends Controller
     // Listar jurisprudências com busca e limite de 20 registros
     public function index(Request $request)
     {
-        $search = $request->query('search');
+        $search = $request->query('search');        
 
         $query = Jurisprudence::query();
 

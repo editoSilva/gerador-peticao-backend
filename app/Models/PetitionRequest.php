@@ -31,7 +31,13 @@ class PetitionRequest extends Model
         'ref_id',
         'price',
         'qr_code',
-        'type'
+        'type',
+        'placa',
+        'data',
+        'local',
+        'infracao',
+        'orgao_atuador',
+        'numero_auto_infra'
     ];
 
    

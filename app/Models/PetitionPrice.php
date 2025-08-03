@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class PetitionPrice extends Model
 {
-    protected $fillable = ['tipo', 'valor'];
+    protected $fillable = ['tipo', 'valor', 'description'];
 }

@@ -34,6 +34,12 @@ return new class extends Migration
             $table->string('ref_id')->index();
             $table->decimal('price', 10, 2);
             $table->string('qr_code')->nullable();
+            $table->string('placa')->nullable();
+            $table->string('local')->nullable();
+            $table->string('infracao')->nullable();
+            $table->string('data')->nullable();
+            $table->string('orgao_atuador')->nullable();
+            $table->string('numero_auto_infra')->nullable();
             $table->enum('status', ['pending', 'paid', 'refused', 'refunded', 'chargeback'])->default('pending');
             $table->timestamps();
         });

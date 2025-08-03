@@ -20,21 +20,14 @@ class WebhookController extends Controller
     {
         $petition = $this->petitionRequest->where('ref_id', $request->id)->with('attachments')->first();
 
-        //Verifica se o pagamento está correto
-
         if($petition && $petition->status === 'pending') 
         {
-
-            
-
-            GeneratePetition::dispatch($petition);
+            GeneratePetition::dispatch($petition, 'payment');
 
             return response()->json([
-                'message' => 'Enviando...'
+                'message' => 'Enviado'
             ], 201);
-            // return $petition;
+          
         }
-
-
     }
 }

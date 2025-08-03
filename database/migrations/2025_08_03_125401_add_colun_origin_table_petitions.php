@@ -9,15 +9,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    
     public function up(): void
     {
-        Schema::create('petition_prices', function (Blueprint $table) {
-            $table->id();
-            $table->string('tipo');
-            $table->decimal('valor', 10, 2); 
-            $table->string('description');
-            $table->timestamps();
+        Schema::table('petitions', function (Blueprint $table) {
+            $table->string('origin')->default('admin'); 
         });
     }
 
@@ -26,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('petition_prices');
+        Schema::table('petitions', function (Blueprint $table) {
+            $table->dropColumn('origin');
+        });
     }
 };

@@ -22,14 +22,16 @@ class GeneratePetition implements ShouldQueue
 
     public $petition;
     public $serviceEvolution;
+    public $origin;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(PetitionRequest $petition)
+    public function __construct(PetitionRequest $petition, $origin)
     {
         $this->petition = $petition;
         $this->serviceEvolution = app()->make(EvolutionService::class);
+        $this->origin = $origin;
     }
 
     /**
@@ -39,7 +41,7 @@ class GeneratePetition implements ShouldQueue
     {
         $petition = $this->petition;
 
-        info($petition);
+       
         if($petition->type == 'cdc') {
             // Montar prompt com os dados do cliente para a geração da petição
             $fullPrompt = <<<EOT
@@ -133,22 +135,77 @@ class GeneratePetition implements ShouldQueue
         }
 
         if($petition->type == 'trans') {
-            $promptText = "Com base no órgão autuador '{$petition->orgao_autuador}' e no estado '{$petition->estado}', onde o cidadão deve entrar com recurso da multa de trânsito,  mostre o local onde devo levar esse documento ou o procedimento que preciso fazer??";
-            $generateLocation = app(GptService::class)->generatePetition($promptText);
-        }
 
-        //$rand = rand(18575557, 99999999);
+            $orgao = strtoupper($petition->orgao_atuador);
+
+            $prompt = <<<EOT
+            Você é um advogado especialista em Direito de Trânsito.
+
+            No início da petição, escreva:
+
+            Ilustríssimo(a) Senhor(a) Presidente da Junta Administrativa de Recursos de Infrações – {$orgao}
+
+            Ref.: Recurso Administrativo – Auto de Infração nº [{$petition->numero_auto_infra}]
+
+            Com base nas informações abaixo, redija um recurso administrativo para defesa de multa de trânsito. O texto deve ser claro, fundamentado no Código de Trânsito Brasileiro (CTB) e nos princípios constitucionais da ampla defesa, contraditório e devido processo legal. A linguagem deve ser respeitosa e acessível.
+
+            O recurso deve ser **endereçado formalmente ao órgão autuador informado abaixo**, com uma saudação adequada (por exemplo, "Ilustríssimo(a) Senhor(a) Presidente da Junta Administrativa de Recursos de Infrações – {$petition->orgao_autuador}").
+
+            ---
+
+            DADOS DO CONDUTOR:
+
+            - Nome completo: {$petition->nome_completo}
+            - CPF: {$petition->cpf}
+            - RG: {$petition->rg} ({$petition->orgao_expedidor})
+            - Estado civil: {$petition->estado_civil}
+            - Profissão: {$petition->profissao}
+            - Endereço: {$petition->endereco}, {$petition->cidade}/{$petition->estado}, CEP: {$petition->cep}
+            - E-mail: {$petition->email}
+            - Telefone: {$petition->phone}
+
+            DADOS DA INFRAÇÃO:
+
+            - Órgão autuador: {$petition->orgao_autuador}
+            - Placa do veículo: {$petition->placa}
+            - Data da infração: {$petition->data}
+            - Local da infração: {$petition->local}
+            - Infração descrita: {$petition->infracao}
+
+            DEFESA DO CONDUTOR:
+
+            {$petition->prompt}
+
+            Remova o nome no fim da petição e a data também.
+
+            ANEXOS:
+            Se aplicável, foram incluídas provas visuais e documentais (fotos, vídeos, documentos) que ajudam a demonstrar os fatos alegados.
+
+            ---
+
+            Com base nessas informações, redija uma defesa administrativa em primeira pessoa, citando os artigos pertinentes do CTB (como art. 280 e 281), normas do CONTRAN e os princípios constitucionais. Solicite o cancelamento da multa e finalize com um pedido de deferimento do recurso.
+            EOT;
+
+            $promptText = "Com base no órgão autuador '{$petition->orgao_autuador}' e no estado '{$petition->estado}', onde o cidadão deve entrar com recurso da multa de trânsito,  mostre o local onde devo levar esse documento ou o procedimento que preciso fazer??";
+            
+            
+            $generateLocation = app(GptService::class)->generatePetitionLocation($promptText);
+
+            $generatedText = app(GptService::class)->generatePetition($prompt);
+        }
 
         $petitionNew = Petition::create([
             'ref_id' => $petition->ref_id,
             'type' => $petition->type,
-            'content' => $generatedText,
-            'input_data' => '',
+            'content' => $petition->qr_code,
+            'input_data' => $generatedText,
             'local_delivery' => $generateLocation,
+            'origin'        => $this->origin,
+            'status'        => 'paid',
+            'pdf_url'       =>  $petition->pdf_url
         ]);
 
         // Preparar anexos (imagens em base64)
-    
         $imagesBase64 = [];
 
         if (count($petition->attachments) > 0) {
@@ -174,7 +231,7 @@ class GeneratePetition implements ShouldQueue
         $pdfUrl = Storage::disk('s3')->url($pdfPath);
 
         // Atualizar a petição com a URL
-        $petition->update([
+        $petitionNew->update([
             'pdf_url' => $pdfUrl,
         ]);
    
@@ -193,15 +250,13 @@ class GeneratePetition implements ShouldQueue
         );
 
         $textoWhats = saudacaoPorHorario()."!  *{$petition->nome_completo}*.\nEnviamos para o seu email: {$petition->email}.\nAs informações a respeito do pedito Nº {$petition->ref_id}";        
-        $this->serviceEvolution->sendMenssageText($petition->phone, $textoWhats);
 
-    // return $pdf->output();
-// 
-    //    $this->serviceEvolution->sendMenssageText($request->phone, 'Segue o link da sua petição: ' . $pdfUrl);
+        $this->serviceEvolution->sendMenssageText($petition->phone, $textoWhats);
         $this->serviceEvolution->sendMessagePdf($petition->phone, $pdfUrl, $fileName, $caption);
 
+        $this->petition->status = 'paid';
+        $this->petition->save();
 
-        // info($fullPrompt);
             
     }
 }

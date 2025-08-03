@@ -15,8 +15,10 @@ class GptService
             'model' => 'gpt-4.1',
             'store' => true,
             'messages' => [
-                ['role' => 'user', 'content' => $prompt]
-            ]
+                ['role' => 'system', 'content' => 'Você é um advogado especialista em Direito do Consumidor.'],
+                ['role' => 'user', 'content' => $prompt],
+            ],
+            'temperature' => 0.7,
         ]);
 
         return $response->json('choices.0.message.content') ?? 'Erro na resposta da IA';
@@ -31,8 +33,10 @@ class GptService
             'model' => 'gpt-4.1',
             'store' => true,
             'messages' => [
-                ['role' => 'user', 'content' => $prompt]
-            ]
+                ['role' => 'system', 'content' => 'Você é um advogado especialista em Direito do Consumidor.'],
+                ['role' => 'user', 'content' => $prompt],
+            ],
+            'temperature' => 0.7,
         ]);
 
         return $response->json('choices.0.message.content') ?? 'Erro na resposta da IA';

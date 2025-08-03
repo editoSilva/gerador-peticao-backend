@@ -5,6 +5,10 @@ use App\Http\Controllers\Api\v1\Costumer\PetitionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+
+Route::prefix('auth')->group(base_path('routes/Auth/api.php'));
+
+
 Route::prefix('costumer')->group(function () {
     Route::apiResource('petitions', PetitionController::class);
 });

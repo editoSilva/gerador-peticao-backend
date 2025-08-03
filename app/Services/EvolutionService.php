@@ -18,37 +18,37 @@ class EvolutionService
         return $response->successful() ? $response->json() : $response->body();
     }
 
-    public function sendMessagePdf($number, $pdfPath, $fileName = 'documento.pdf', $caption = 'Segue o documento solicitado')
+    public function sendMessagePdf($number, $pdfUrl, $fileName, $caption = null)
     {
-        // Ler o PDF e converter para Base64
-        if (!file_exists($pdfPath)) {
-            return ['error' => 'Arquivo PDF não encontrado.'];
-        }
-
-        $base64 = base64_encode(file_get_contents($pdfPath));
-
-        // Montar payload
         $payload = [
             'number' => $number,
-            'options' => [
-                'delay' => 0,
-                'presence' => 'composing'
-            ],
-            'mediaMessage' => [
-                'mediaType' => 'document',
-                'fileName' => $fileName,
-                'caption' => $caption,
-                'media' => $base64
-            ]
+            'mediatype' => 'document',        // tudo minúsculo conforme o curl
+            'mimetype' => 'application/pdf',  // MIME type correto para PDF
+            'caption' => $caption ?? '',
+            'media' => $pdfUrl,                // URL pública do PDF ou base64
+            'fileName' => $fileName,
+            'delay' => 100,
+            'linkPreview' => false,
+            // 'mentionsEveryOne' => false, // se quiser
+            // 'mentioned' => [],            // se quiser mencionar
+            // 'quoted' => [],               // para responder mensagem específica
         ];
 
-        // Enviar para EvolutionAPI
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
-            'apikey' => env('WHATSBOOT_API_KEY')
+            'apikey' => env('WHATSBOOT_API_KEY'),
         ])->post('https://whatsboot.partnersrolex.com/message/sendMedia/teste', $payload);
 
-        return $response->successful() ? $response->json() : $response->body();
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        // Se falhar, retorna o erro para debug
+        // return [
+        //     'success' => false,
+        //     'status' => $response->status(),
+        //     'error' => $response->body(),
+        // ];
     }
 
     public function sendImagemUrl($number, $media)

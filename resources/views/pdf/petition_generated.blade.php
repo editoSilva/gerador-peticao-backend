@@ -40,9 +40,8 @@
 {!! nl2br(e($content)) !!}
 
 <div class="signature-block">
-    <p>Vitória da Conquista - BA, {{ \Carbon\Carbon::now()->format('d/m/Y') }}</p>
-    </br>
-    </br>
+    <p>{{ $cidade }} - {{ $estado }}, {{ ucfirst(\Carbon\Carbon::now()->locale('pt_BR')->translatedFormat('d \d\e F \d\e Y')) }}</p>
+    <br><br>
     <p>___________________________________________</p>
     <p>{{ $name }}</p>
 </div>

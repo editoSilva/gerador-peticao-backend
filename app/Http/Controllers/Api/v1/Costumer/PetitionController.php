@@ -6,6 +6,7 @@ use App\Models\Petition;
 use App\Services\GptService;
 use Illuminate\Http\Request;
 use App\Models\Jurisprudence;
+use App\Mail\PetitionGenerated;
 use App\Services\GeminiService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Services\EvolutionService;
@@ -26,11 +27,8 @@ class PetitionController extends Controller
   
     public function store(Request $request)
     {
-
-        // return $this->serviceEvolution->sendMenssageText($request->phone, 'Segue o link da sua petição: https://systechtecnologia.s3.amazonaws.com/petitions/peticao_n_3604590023.pdf');
-
         $data = $request->validate([
-            'prompt' => 'required|string',
+            'prompt' => 'required|string',                                            
             'nome_completo' => 'required|string',
             'cpf' => 'required|string',
             'rg' => 'required|string',
@@ -48,6 +46,7 @@ class PetitionController extends Controller
             'cnpj' => 'required|string',
         ]);
 
+
         // Buscar jurisprudências do banco e incluir no prompt
         $jurisprudences = Jurisprudence::all()->map(function ($juri, $i) {
             return (
@@ -63,7 +62,7 @@ class PetitionController extends Controller
             );
         })->implode("\n\n");
 
-        // return $jurisprudences;
+ 
 
         // Montar prompt com os dados do cliente para a geração da petição
         $fullPrompt = <<<EOT
@@ -94,47 +93,70 @@ class PetitionController extends Controller
             Jurisprudências Relevantes:
             {$jurisprudences}
 
-            Requisitos:
-            1. pegue o endereço do clientes cidade estado para definir a comarca na petição, deixe esse campo em maiusculo e centralizado. Ex: 'EXCELENTÍSSIMO SENHOR JUIZ DE DIREITO DA [número ou nome] VARA DO SISTEMA DOS JUIZADOS CÍVEIS DO FORO DA COMARCA DE [nome da comarca] DO [Estado da comarca]'
-            2. utilize a informação do requerido e coloque os dados do mesmo na ação,  busque os dados de cnpj e razação social na internet, a moeda é real R$
-            // 3. Basei a ação no artigo 186 do cdc com um exceente fundamento jurídico a peça. 
-            4. Estrutura com: cabeçalho, qualificação do consumidor, exposição dos fatos, fundamentos jurídicos com base no CDC, e pedidos. CALCULE O VALOR DA CAUSA PEÇA UM VALOR ALTO QUE CHEGUE NO TETO DE 40 SALÁRIOS MINIMIOS VIGENTES, REFERENTE AO PEDIDO QUE O CLIENTE SOLICITOU DA DESCRIÇÃO DOS FATOS, FAÇA ISSO DE FORMA BASEADA NO CDC, SE BASEI NO ART 42 DO CDC PARA FAZER UM CALCULO QUE DER UM VALOR ALTO PARA O REQUERENTE
-            5. Citar os artigos do CDC aplicáveis (como má prestação de serviço, serviço essencial, direito à informação, etc), Basei a ação no artigo 186.
-            6. Incluir pedido de indenização por danos morais, se cabível.
-            7. Inserir ao final: "Termos em que, pede deferimento.", seguido da data e nome como assinatura.
-            8. Utilize uma excelente linguagem
-            9. Calcule o valor da causa com base no valor do pedido, se não houver valor, coloque o valor de 1.000,00
-            10. A petição deve ser escrita de forma clara, objetiva e acessível, sem jargões jurídicos complexos.
-            11. A petição deve ser escrita em português brasileiro, com correção gramatical e ortográfica.
-            12. A petição deve ser formatada de forma adequada, com parágrafos bem definidos e espaçamento adequado.
-            13. A petição deve conter a data e o local de onde está sendo feita, com o nome do cliente como assinatura.
-            14. A petição deve ser escrita de forma que qualquer pessoa possa entender, sem necessidade de conhecimento jurídico prévio.
-            15. A petição deve ser escrita de forma que possa ser enviada por e-mail, sem necessidade de formatação adicional.
-            16. remova o nome  no fim da petição e data também.
-            17. Coloque uma menssão que as provas estão em anexo em imagens.
-            A linguagem deve ser clara, objetiva e acessível para qualquer pessoa.
-            quero que a petição seja real sem caracteres especiais, separe por paragráfo corretamente e preciso que tenha a data e  o local digitado que ja venha impresso
-            EOT;
+        
+        Requisitos:
+        1. Pegue o endereço do cliente (cidade e estado) para definir a comarca na petição. Deixe esse campo em maiúsculo e centralizado. Exemplo:  
+        'EXCELENTÍSSIMO SENHOR JUIZ DE DIREITO DA [número ou nome] VARA DO SISTEMA DOS JUIZADOS CÍVEIS DO FORO DA COMARCA DE [nome da comarca] DO [Estado da comarca]'.
 
+        2. Utilize a informação do requerido e coloque os dados do mesmo na ação. Busque os dados de CNPJ e razão social na internet, a moeda é Real (R$).
 
+        3. Baseie a ação no artigo 186 do CDC com um excelente fundamento jurídico na peça.
+
+        4. Estruture a petição com: cabeçalho, qualificação do consumidor, exposição dos fatos, fundamentos jurídicos com base no CDC e pedidos.  
+        Calcule o valor da causa até 40 salários mínimos vigentes, referente ao pedido que o cliente solicitou na descrição dos fatos. Faça isso de forma baseada no CDC.  
+        Se baseie no artigo 42 do CDC para fazer um cálculo que der um valor alto para o requerente, formate o cpf rg ou cnpj de formas com pontos traços de forma bem legível.
+
+        5. Cite os artigos do CDC aplicáveis (como má prestação de serviço, serviço essencial, direito à informação, etc). Baseie a ação no artigo 186.
+
+        6. Inclua pedido de indenização por danos morais, se cabível.
+
+        7. Insira ao final: "Termos em que, pede deferimento.", seguido da data e nome como assinatura.
+
+        8. Utilize uma excelente linguagem.
+
+        9. Calcule o valor da causa com base no valor do pedido; se não houver valor, coloque o valor de R$ 1.000,00.
+
+        10. A petição deve ser escrita de forma clara, objetiva e acessível, sem jargões jurídicos complexos.
+
+        11. A petição deve ser escrita em português brasileiro, com correção gramatical e ortográfica.
+
+        12. A petição deve ser formatada de forma adequada, com parágrafos bem definidos e espaçamento adequado.
+
+        13. A petição deve conter a data e o local de onde está sendo feita, com o nome do cliente como assinatura.
+
+        14. A petição deve ser escrita de forma que qualquer pessoa possa entender, sem necessidade de conhecimento jurídico prévio.
+
+        15. A petição deve ser escrita de forma que possa ser enviada por e-mail, sem necessidade de formatação adicional.
+
+        16. Remova o nome no fim da petição e a data também.
+
+        17. Coloque uma menção que as provas estão em anexo em imagens.
+
+        A linguagem deve ser clara, objetiva e acessível para qualquer pessoa.  
+        Quero que a petição seja real, sem caracteres especiais, e que os parágrafos estejam separados corretamente.
+        EOT;
+          
         $generatedText = app(GptService::class)->generatePetition($fullPrompt);
 
         if($request->type == 'cdc') {
-            $generateLocation = app(GptService::class)->generatePetitionLocation(
-                "Qual o local e comarca da petição com base no documento gerado: {$generatedText}, mostre o local onde devo levar esse documento ou o procedimento que preciso fazer?"
-            );
+
+            $promptRes = <<<EOT
+            Com base no endereço do autor e no conteúdo abaixo, diga de forma curta, objetiva e prática onde o cliente deve ir para ajuizar a ação no Juizado Especial Cível. Inclua:
+            O nome e o endereço do juizado mais próximo;
+            O que ele deve levar em mãos (documentos);
+            Dicas breves para o atendimento presencial;
+            Um tom acessível e direto, como se fosse uma orientação passo a passo.
+            Endereço do autor: {$data['endereco']}, {$data['cidade']}, {$data['estado']}
+            Petição:
+            {$generatedText}
+            EOT;
+            $generateLocation = app(GptService::class)->generatePetitionLocation($promptRes);
 
         }
         if($request->type == 'trans') {
-
-         $orgao = strtolower($data['orgao_autuador'] ?? '');
-
-
-
-        $promptText = "Com base no órgão autuador '{$data['orgao_autuador']}' e no estado '{$data['estado']}', onde o cidadão deve entrar com recurso da multa de trânsito,  mostre o local onde devo levar esse documento ou o procedimento que preciso fazer??";
-        $generateLocation = app(GeminiService::class)->generatePetition($promptText);
-       
-    }
+            $promptText = "Com base no órgão autuador '{$data['orgao_autuador']}' e no estado '{$data['estado']}', onde o cidadão deve entrar com recurso da multa de trânsito,  mostre o local onde devo levar esse documento ou o procedimento que preciso fazer??";
+            $generateLocation = app(GeminiService::class)->generatePetition($promptText);
+        }
 
         $rand = rand(18575557, 99999999);
 
@@ -154,15 +176,17 @@ class PetitionController extends Controller
             }
         }
 
-
         // Gerar PDF
-        $pdf = Pdf::loadView('emails.petition_generated', [
+        $pdf = Pdf::loadView('pdf.petition_generated', [
             'content' => $generatedText, 
             'name' => $data['nome_completo'],
+            'cidade' => $data['cidade'],
+            'estado' => $data['estado'],
             'attachments' => $imagesBase64,
         ]);
 
         $pdfPath = 'petitions/peticao_n_' . $petition->ref_id . '.pdf';
+
         Storage::disk('s3')->put($pdfPath, $pdf->output(), 'public');
 
         // Gerar a URL pública
@@ -173,12 +197,39 @@ class PetitionController extends Controller
             'pdf_url' => $pdfUrl,
         ]);
    
-       $this->serviceEvolution->sendMenssageText($request->phone, $petition->local_delivery);
+        $fileName = 'peticao_'.$petition->ref_id . '.pdf';
+        $caption = 'peticao_n_' . $petition->ref_id;
 
-       $this->serviceEvolution->sendMenssageText($request->phone, 'Segue o link da sua petição: ' . $pdfUrl);
+        //Job
+       Mail::to($data['email'])->send(
+            new PetitionGenerated(
+                name: $data['nome_completo'],
+                pdfUrl: $pdfPath, // relativo, ex: "petitions/peticao_n_123.pdf"
+                fileName: $fileName,
+                number: $petition->ref_id,
+                description: $petition->local_delivery
+            )
+        );
 
+        $textoWhats = "*Enviamos para o seu email: {$data['email']},  as informações a respeito do pedito Nº {$petition->ref_id}*";
+        
+        $this->serviceEvolution->sendMenssageText($request->phone, $textoWhats);
+
+    // return $pdf->output();
+// 
+    //    $this->serviceEvolution->sendMenssageText($request->phone, 'Segue o link da sua petição: ' . $pdfUrl);
+        $this->serviceEvolution->sendMessagePdf($request->phone, $pdfUrl, $fileName, $caption);
 
         return response()->json($petition);
 
     }
+
+    public function aplicarNegritoEmCaixaAlta(string $texto): string {
+        // Regex que captura palavras/frases em caixa alta (mínimo 2 letras) e envolve em <strong>
+        return preg_replace_callback('/\b([A-ZÁÉÍÓÚÇ]{2,}(?:\s[A-ZÁÉÍÓÚÇ]{2,})*)\b/u', function ($matches) {
+            return '<strong>' . $matches[0] . '</strong>';
+        }, $texto);
+    }
+
+    
 }

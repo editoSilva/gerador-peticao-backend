@@ -44,7 +44,7 @@ class PetitionServices
             
         if($request->type === 'cdc') {
             // Buscar jurisprudências do banco e incluir no prompt
-            $jurisprudences = Jurisprudence::all()->map(function ($juri, $i) {
+            $jurisprudences = Jurisprudence::where('type', $request->type)->get()->map(function ($juri, $i) {
                 return (
                     ($i + 1) . ". " . $juri->title . "\n"
                     . "Resumo: " . ($juri->summary ?? 'N/A') . "\n"
@@ -93,10 +93,7 @@ class PetitionServices
             ], 400);
         }
 
-        return response()->json([
-                'ref_id'  => $petitionRequest->ref_id,  
-                'qr_code' => $petitionRequest->qr_code,
-                'price'   => $petitionRequest->price,  
-        ]);
-        } 
+        return $petitionRequest;
+        
+    } 
 }

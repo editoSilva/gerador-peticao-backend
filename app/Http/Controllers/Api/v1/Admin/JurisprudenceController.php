@@ -17,6 +17,7 @@ class JurisprudenceController extends Controller
 
         if ($search) {
             $query->where('title', 'like', "%{$search}%")
+            ->where('type', $request->type)
                 ->orWhere('summary', 'like', "%{$search}%")
                 ->orWhere('full_text', 'like', "%{$search}%")
                 ->orWhere('keywords', 'like', "%{$search}%");

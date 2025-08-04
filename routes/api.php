@@ -17,9 +17,9 @@ Route::prefix('webhooks')->group(
     base_path('routes/Webhooks/MP/api.php')
 );
 
-Route::prefix('admin')->group(function () {
-    Route::apiResource('jurisprudences', JurisprudenceController::class);
-});
+Route::prefix('admin')->middleware(['auth:sanctum'])->group(
+    base_path('routes/Admin/api.php'),
+);
 
 Route::get('/', function() {
     return response()->json([

@@ -41,7 +41,7 @@ class GeneratePetition implements ShouldQueue
     {
         $petition = $this->petition;
 
-       
+        info($petition);
         if($petition->type == 'cdc') {
             // Montar prompt com os dados do cliente para a geração da petição
             $fullPrompt = <<<EOT
@@ -77,7 +77,7 @@ class GeneratePetition implements ShouldQueue
             1. Pegue o endereço do cliente (cidade e estado) para definir a comarca na petição. Deixe esse campo em maiúsculo e centralizado. Exemplo:  
             'EXCELENTÍSSIMO SENHOR JUIZ DE DIREITO DA [número ou nome] VARA DO SISTEMA DOS JUIZADOS CÍVEIS DO FORO DA COMARCA DE [nome da comarca] DO [Estado da comarca]'.
 
-            2. Utilize a informação do requerido e coloque os dados do mesmo na ação. Busque os dados de CNPJ e razão social na internet, a moeda é Real (R$).
+            2. Utilize a informação do requerido e coloque os dados do mesmo na ação. Busque os dados de CNPJ e razão social na internet, a moeda é Real (R$), preciso que o rg seja formatado assim: 000000-00.
 
             3. Baseie a ação no artigo 186 do CDC com um excelente fundamento jurídico na peça.
 
@@ -239,14 +239,14 @@ class GeneratePetition implements ShouldQueue
         $caption = 'peticao_n_' . $petition->ref_id;
 
         //Job
-       Mail::to($petition->email)->send(
-            new PetitionGenerated(
+        Mail::to($petition->email)->send(
+            (new PetitionGenerated(
                 name: $petition->nome_completo,
-                pdfUrl: $pdfPath, // relativo, ex: "petitions/peticao_n_123.pdf"
+                pdfUrl: $pdfPath,
                 fileName: $fileName,
                 number: $petition->ref_id,
                 description: $petitionNew->local_delivery
-            )
+            ))->from('contato@direitocidadao.com', "Petição Nº ({$petition->ref_id}), Direito Cidadção")
         );
 
         $textoWhats = saudacaoPorHorario()."!  *{$petition->nome_completo}*.\nEnviamos para o seu email: {$petition->email}.\nAs informações a respeito do pedito Nº {$petition->ref_id}";        

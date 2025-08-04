@@ -14,8 +14,8 @@ return new class extends Migration
     {
         Schema::create('petition_prices', function (Blueprint $table) {
             $table->id();
-            $table->string('tipo');
-            $table->decimal('valor', 10, 2); 
+            $table->string('type');
+            $table->decimal('amount', 10, 2); 
             $table->string('description');
             $table->timestamps();
         });

@@ -31,9 +31,10 @@ class Petition extends Model
         return $query;
     }
 
-    protected $casts = [
+    protected $casts = 
+    [
         'input_data' => 'array',
-            ];
+    ];
 
     public function jurisprudences()
     {

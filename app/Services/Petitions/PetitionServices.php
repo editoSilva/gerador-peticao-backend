@@ -10,8 +10,7 @@ use App\Services\Payments\PaymentServices;
 
 class PetitionServices
 {
-    
-        public function generatedPetition($request)
+    public function generatedPetition($request)
         {
                        
             $data = $request->validate([
@@ -66,11 +65,12 @@ class PetitionServices
         //Pega o valor da petição
         $data['price'] = 50.00;
         //faz o processamento com o banco
-        $data['qr_code'] = app()->make(PaymentServices::class)->pay($data['price']) ?? env("PAY_TEST_QR");
+        $data['qr_code'] = app()->make(PaymentServices::class)->pay($data['price'], $data['ref_id']);
 
         $petitionRequest =  PetitionRequest::create($data);
 
         if($request->hasFile('attachments')) {
+            
             foreach ($request->file('attachments') as $file) {
                 // Salvar arquivo no S3, na pasta 'attachments'
                 $path = $file->store('attachments', 's3');

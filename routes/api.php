@@ -13,9 +13,10 @@ Route::prefix('costumer')->group(function () {
     Route::apiResource('petitions', PetitionController::class);
 });
 
-Route::prefix('webhooks')->group(
-    base_path('routes/Webhooks/MP/api.php')
-);
+Route::prefix('webhooks')->group([
+    base_path('routes/Webhooks/MP/api.php'),
+    base_path('routes/Webhooks/Asas/api.php')
+]);
 
 Route::prefix('admin')->middleware(['auth:sanctum'])->group(
     base_path('routes/Admin/api.php'),

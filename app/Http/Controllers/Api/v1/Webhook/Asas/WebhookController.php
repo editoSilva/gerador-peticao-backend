@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Http\Controllers\Api\v1\Webhook\Asas;
+
+use Illuminate\Http\Request;
+use App\Jobs\GeneratePetition;
+use App\Models\PetitionRequest;
+use App\Http\Controllers\Controller;
+use App\Traits\Payment\AsasPayment;
+
+class WebhookController extends Controller
+{
+    use AsasPayment;
+
+    private $petitionRequest;
+
+    public function __construct(PetitionRequest $petitionRequest)
+    {
+        $this->petitionRequest = $petitionRequest;
+    }
+
+    public function updatePayment(Request $request)
+    {
+
+        if ($request['event'] == "PAYMENT_RECEIVED" && $request['payment']['status'] == "RECEIVED") {
+       
+            $petition = $this->petitionRequest->where('ref_id', $request['payment']['externalReference'])->with('attachments')->first();
+
+            if($petition && $petition->status === 'pending') 
+            {
+                GeneratePetition::dispatch($petition, 'payment');
+    
+                return response()->json([
+                    'message' => 'Enviado'
+                ], 201);
+              
+            }
+        }  
+      
+
+       
+    }
+}
